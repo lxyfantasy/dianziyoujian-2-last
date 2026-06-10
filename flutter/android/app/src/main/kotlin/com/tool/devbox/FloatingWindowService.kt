@@ -1,6 +1,6 @@
-package com.carriez.flutter_hbb
-// 增加
-import com.carriez.flutter_hbb.R
+package com.tool.devbox
+
+import com.tool.devbox.R
 import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.app.Service
@@ -390,4 +390,3 @@ class FloatingWindowService : Service(), View.OnTouchListener {
         return false
     }
 }
-
