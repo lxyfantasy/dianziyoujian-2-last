@@ -508,6 +508,10 @@ jobs:
       - name: Grant execute permission for sh scripts
         run: chmod +x ./flutter/*.sh
 
+      # 在这里插入下面这一段
+      - name: Grant execute permission for sh scripts
+        run: chmod +x ./flutter/*.sh
+
       - name: Install flutter
         uses: subosito/flutter-action@v2
         with:
