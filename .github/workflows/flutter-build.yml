@@ -87,7 +87,7 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v4
         with:
-          ref: avatar
+          ref: ${{ github.ref_name }}
           fetch-depth: 0
           submodules: recursive
 
@@ -272,7 +272,7 @@ jobs:
 
       - name: Publish Release
         uses: softprops/action-gh-release@v1
-        if: env.UPLOAD_ARTIFACT == 'true'
+        if: env.UPLOAD_ARTIFACT == 'true' && startsWith(github.ref, 'refs/tags/')
         with:
           prerelease: true
           tag_name: ${{ env.TAG_NAME }}
@@ -305,7 +305,7 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v4
         with:
-          ref: avatar
+          ref: ${{ github.ref_name }}
           fetch-depth: 0
           submodules: recursive
 
@@ -421,7 +421,7 @@ jobs:
 
       - name: Publish Release
         uses: softprops/action-gh-release@v1
-        if: env.UPLOAD_ARTIFACT == 'true'
+        if: env.UPLOAD_ARTIFACT == 'true' && startsWith(github.ref, 'refs/tags/')
         with:
           prerelease: true
           tag_name: ${{ env.TAG_NAME }}
@@ -500,9 +500,13 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v4
         with:
-          ref: avatar
+          ref: ${{ github.ref_name }}
           fetch-depth: 0
           submodules: recursive
+
+      # 在这里插入下面这一段
+      - name: Grant execute permission for sh scripts
+        run: chmod +x ./flutter/*.sh
 
       - name: Install flutter
         uses: subosito/flutter-action@v2
@@ -640,7 +644,7 @@ jobs:
           path: ${{steps.sign-rustdesk.outputs.signedReleaseFile}}
 
       - name: Publish signed apk package
-        if: env.ANDROID_SIGNING_KEY != null && env.UPLOAD_ARTIFACT == 'true'
+        if: env.ANDROID_SIGNING_KEY != null && env.UPLOAD_ARTIFACT == 'true' && startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
           prerelease: true
@@ -649,7 +653,7 @@ jobs:
             ${{steps.sign-rustdesk.outputs.signedReleaseFile}}
 
       - name: Publish unsigned apk package
-        if: env.ANDROID_SIGNING_KEY == null && env.UPLOAD_ARTIFACT == 'true'
+        if: env.ANDROID_SIGNING_KEY == null && env.UPLOAD_ARTIFACT == 'true' && startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
           prerelease: true
@@ -682,6 +686,7 @@ jobs:
 
       - name: Publish unsigned app
         uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
         with:
           prerelease: true
           tag_name: ${{ env.TAG_NAME }}
