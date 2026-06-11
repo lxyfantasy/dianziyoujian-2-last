@@ -103,9 +103,12 @@ class _PeerTabPageState extends State<PeerTabPage>
                 child: selectionWrap(Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
+                    // 外层Offstage隐藏顶部四个切换标签图标栏
                     Expanded(
-                        child: visibleContextMenuListener(
-                            _createSwitchBar(context))),
+                        child: Offstage(
+                          offstage: true,
+                          child: visibleContextMenuListener(_createSwitchBar(context)),
+                        )),
                     if (stateGlobal.isPortrait.isTrue)
                       ..._portraitRightActions(context)
                     else
@@ -389,7 +392,7 @@ class _PeerTabPageState extends State<PeerTabPage>
                 final favs = (await bind.mainGetFav()).toList();
                 peers.map((p) {
                   favs.remove(p.id);
-                }).toList();
+                  }).toList();
                 await bind.mainStoreFav(favs: favs);
                 bind.mainLoadFavPeers();
                 break;
@@ -848,7 +851,7 @@ class PeerSortDropdown extends StatefulWidget {
   const PeerSortDropdown({super.key});
 
   @override
-  State<PeerSortDropdown> createState() => _PeerSortDropdownState();
+  State<PeerSortDropdownState> createState() => _PeerSortDropdownState();
 }
 
 class _PeerSortDropdownState extends State<PeerSortDropdown> {

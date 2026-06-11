@@ -16,14 +16,16 @@ import '../../models/server_model.dart';
 import 'home_page.dart';
 
 class ServerPage extends StatefulWidget implements PageShape {
+  // 需求6：底部导航只保留图标，删除文字
   @override
-  final title = translate("");
+  final title = "";
 
   @override
   final icon = const Icon(Icons.mobile_screen_share);
 
+  // 需求5：移除右上角三点密码设置下拉菜单
   @override
-    final appBarActions = [];
+  final appBarActions = [];
 
   ServerPage({Key? key}) : super(key: key);
 
@@ -31,10 +33,11 @@ class ServerPage extends StatefulWidget implements PageShape {
   State<StatefulWidget> createState() => _ServerPageState();
 }
 
+// 需求5：整个下拉菜单类直接注释删除，不再使用
+/*
 class _DropDownAction extends StatelessWidget {
   _DropDownAction();
 
-  // should only have one action
   final actions = [
     PopupMenuButton<String>(
         tooltip: "",
@@ -174,6 +177,7 @@ class _DropDownAction extends StatelessWidget {
     return actions[0];
   }
 }
+*/
 
 class _ServerPageState extends State<ServerPage> {
   Timer? _updateTimer;
@@ -197,20 +201,26 @@ class _ServerPageState extends State<ServerPage> {
   Widget build(BuildContext context) {
     checkService();
     return ChangeNotifierProvider.value(
-      value: gFFI.serverModel,
-      child: Consumer<ServerModel>(
-        builder: (context, serverModel, child) => Scaffold(
-          body: Center(
-            child: ElevatedButton(
-              onPressed: () {
-                gFFI.serverModel.checkAndroidPermission();
-              },
-              child: Text(translate("Start service")),
-            ),
-          ),
-        ),
-      ),
-    );
+        value: gFFI.serverModel,
+        child: Consumer<ServerModel>(
+            builder: (context, serverModel, child) => SingleChildScrollView(
+                  controller: gFFI.serverModel.controller,
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        // 需求4：移除顶部蓝色密码提示文字框
+                        // buildPresetPasswordWarningMobile(),
+                        gFFI.serverModel.isStart
+                            ? ServerInfo()
+                            : ServiceNotRunningNotification(),
+                        const ConnectionManager(),
+                        const PermissionChecker(),
+                        SizedBox.fromSize(size: const Size(0, 15.0)),
+                      ],
+                    ),
+                  ),
+                )));
   }
 }
 
@@ -583,30 +593,32 @@ class _PermissionCheckerState extends State<PermissionChecker> {
                           backgroundColor:
                               MaterialStateProperty.all(Colors.red)),
                       icon: const Icon(Icons.stop),
-                      onPressed: () {
-                        // 遍历断开全部在线客户端
-                        List<Client> allClient = List.from(serverModel.clients);
-                        for (var client in allClient) {
-                          bind.cmCloseConnection(connId: client.id);
-                          gFFI.invokeMethod("cancel_notification", client.id);
-                        }
-                        // 关闭后台远程服务
-                        gFFI.serverModel.stopService();
-                      },
+                      onPressed: serverModel.toggleService,
                       label: Text(translate("Stop service")))
                   .marginOnly(bottom: 8)
               : SizedBox.shrink(),
+          // 需求1：保留屏幕捕获、输入控制
           PermissionRow(
               translate("Screen Capture"),
-              true,
-              () {
-                gFFI.serverModel.checkAndroidPermission();
-              }),
-          PermissionRow(translate("Input Control"), true, () {}),
-          PermissionRow(translate("Transfer file"), true, () {}),
+              serverModel.mediaOk,
+              !serverModel.mediaOk &&
+                      gFFI.userModel.userName.value.isEmpty &&
+                      bind.mainGetLocalOption(key: "show-scam-warning") != "N"
+                  ? () => showScamWarning(context, serverModel)
+                  : serverModel.toggleService),
+          PermissionRow(translate("Input Control"), serverModel.inputOk,
+              serverModel.toggleInput),
+
+          // 需求2：隐藏 文件传输、剪贴板、音频录制 三个开关
+          Offstage(offstage: true,
+            child: PermissionRow(translate("Transfer file"), serverModel.fileOk,
+              serverModel.toggleFile),
+          ),
           hasAudioPermission
-              ? PermissionRow(translate("Audio Capture"), serverModel.audioOk,
-                  serverModel.toggleAudio)
+              ? Offstage(offstage: true,
+                  child: PermissionRow(translate("Audio Capture"), serverModel.audioOk,
+                      serverModel.toggleAudio)
+                )
               : Row(children: [
                   Icon(Icons.info_outline).marginOnly(right: 15),
                   Expanded(
@@ -615,6 +627,10 @@ class _PermissionCheckerState extends State<PermissionChecker> {
                     style: const TextStyle(color: MyTheme.darkGray),
                   ))
                 ]),
+          Offstage(offstage: true,
+            child: PermissionRow(translate("Enable clipboard"), serverModel.clipboardOk,
+              serverModel.toggleClipboard),
+          ),
         ]));
   }
 }
@@ -841,10 +857,10 @@ class ClientInfo extends StatelessWidget {
                   child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                    Text(client.name, style: const TextStyle(fontSize: 18)),
-                    const SizedBox(width: 8),
-                    Text(client.peerId, style: const TextStyle(fontSize: 10))
-                  ]))
+                        Text(client.name, style: const TextStyle(fontSize: 18)),
+                        const SizedBox(width: 8),
+                        Text(client.peerId, style: const TextStyle(fontSize: 10))
+                      ]))
             ],
           ),
         ]));

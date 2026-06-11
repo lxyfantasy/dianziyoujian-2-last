@@ -73,7 +73,6 @@ class HomePageState extends State<HomePage> {
           return false;
         },
         child: Scaffold(
-          // backgroundColor: MyTheme.grayBg,
           appBar: AppBar(
             centerTitle: true,
             title: appTitle(),
@@ -81,16 +80,16 @@ class HomePageState extends State<HomePage> {
           ),
           bottomNavigationBar: BottomNavigationBar(
             key: navigationBarKey,
+            // 改动：label固定为空字符串，只保留图标，所有tab文字全部隐藏
             items: _pages
                 .map((page) =>
-                    BottomNavigationBarItem(icon: page.icon, label: page.title))
+                    BottomNavigationBarItem(icon: page.icon, label: ""))
                 .toList(),
             currentIndex: _selectedIndex,
             type: BottomNavigationBarType.fixed,
-            selectedItemColor: MyTheme.accent, //
+            selectedItemColor: MyTheme.accent,
             unselectedItemColor: MyTheme.darkGray,
             onTap: (index) => setState(() {
-              // close chat overlay when go chat page
               if (_selectedIndex != index) {
                 _selectedIndex = index;
                 if (isChatPageCurrentTab) {
@@ -163,7 +162,6 @@ class WebHomePage extends StatelessWidget {
     stateGlobal.isInMainPage = true;
     handleUnilink(context);
     return Scaffold(
-      // backgroundColor: MyTheme.grayBg,
       appBar: AppBar(
         centerTitle: true,
         title: Text("电子邮件 (Preview)"),
