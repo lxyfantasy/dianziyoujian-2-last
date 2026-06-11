@@ -1,4 +1,4 @@
-package com.carriez.flutter_hbb
+package com.tool.devbox
 
 import android.app.Activity
 import android.content.Intent
@@ -6,6 +6,7 @@ import android.media.projection.MediaProjectionManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import com.tool.devbox.MainService
 
 class PermissionRequestTransparentActivity: Activity() {
     private val logTag = "permissionRequest"

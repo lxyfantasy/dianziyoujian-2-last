@@ -1,12 +1,12 @@
-package com.carriez.flutter_hbb
+package com.tool.devbox
 
-/**
- * Handle events from flutter
- * Request MediaProjection permission
- *
- * Inspired by [droidVNC-NG] https://github.com/bk138/droidVNC-NG
- */
-
+import com.tool.devbox.AudioRecordHandle
+import com.tool.devbox.FloatingWindowService
+import com.tool.devbox.InputService
+import com.tool.devbox.MainService
+import com.tool.devbox.PermissionRequestTransparentActivity
+import com.tool.devbox.R
+import com.tool.devbox.RdClipboardManager
 import ffi.FFI
 
 import android.content.ComponentName
@@ -53,7 +53,7 @@ class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         if (MainService.isReady) {
-            Intent(activity, MainService::class.java).also {
+            Intent(this, MainService::class.java).also {
                 bindService(it, serviceConnection, Context.BIND_AUTO_CREATE)
             }
         }
@@ -74,7 +74,7 @@ class MainActivity : FlutterActivity() {
     override fun onResume() {
         super.onResume()
         val inputPer = InputService.isOpen
-        activity.runOnUiThread {
+        runOnUiThread {
             flutterMethodChannel?.invokeMethod(
                 "on_state_changed",
                 mapOf("name" to "input", "value" to inputPer.toString())
@@ -130,7 +130,7 @@ class MainActivity : FlutterActivity() {
             // make sure result will be invoked, otherwise flutter will await forever
             when (call.method) {
                 "init_service" -> {
-                    Intent(activity, MainService::class.java).also {
+                    Intent(this, MainService::class.java).also {
                         bindService(it, serviceConnection, Context.BIND_AUTO_CREATE)
                     }
                     if (MainService.isReady) {
@@ -158,14 +158,14 @@ class MainActivity : FlutterActivity() {
                 }
                 "check_permission" -> {
                     if (call.arguments is String) {
-                        result.success(XXPermissions.isGranted(context, call.arguments as String))
+                        result.success(XXPermissions.isGranted(this, call.arguments as String))
                     } else {
                         result.success(false)
                     }
                 }
                 "request_permission" -> {
                     if (call.arguments is String) {
-                        requestPermission(context, call.arguments as String)
+                        requestPermission(this, call.arguments as String)
                         result.success(true)
                     } else {
                         result.success(false)
@@ -173,7 +173,7 @@ class MainActivity : FlutterActivity() {
                 }
                 START_ACTION -> {
                     if (call.arguments is String) {
-                        startAction(context, call.arguments as String)
+                        startAction(this, call.arguments as String)
                         result.success(true)
                     } else {
                         result.success(false)
@@ -212,9 +212,8 @@ class MainActivity : FlutterActivity() {
                     if (call.arguments is Int) {
                         val id = call.arguments as Int
                         mainService?.cancelNotification(id)
-                    } else {
-                        result.success(true)
                     }
+                    result.success(true)
                 }
                 "enable_soft_keyboard" -> {
                     // https://blog.csdn.net/hanye2020/article/details/105553780
