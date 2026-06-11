@@ -851,7 +851,7 @@ class PeerSortDropdown extends StatefulWidget {
   const PeerSortDropdown({super.key});
 
   @override
-  State<PeerSortDropdownState> createState() => _PeerSortDropdownState();
+  State<_PeerSortDropdownState> createState() => _PeerSortDropdownState();
 }
 
 class _PeerSortDropdownState extends State<PeerSortDropdown> {
