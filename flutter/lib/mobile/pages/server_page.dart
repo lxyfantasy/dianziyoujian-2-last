@@ -16,16 +16,17 @@ import '../../models/server_model.dart';
 import 'home_page.dart';
 
 class ServerPage extends StatefulWidget implements PageShape {
-  // 需求6：底部导航只保留图标，删除文字
   @override
   final title = "";
 
   @override
   final icon = const Icon(Icons.mobile_screen_share);
 
-  // 需求5：移除右上角三点密码设置下拉菜单
   @override
-  final appBarActions = [];
+  final appBarActions = (!bind.isDisableSettings() &&
+          bind.mainGetBuildinOption(key: kOptionHideSecuritySetting) != 'Y')
+      ? [_DropDownAction()]
+      : [];
 
   ServerPage({Key? key}) : super(key: key);
 
@@ -33,11 +34,10 @@ class ServerPage extends StatefulWidget implements PageShape {
   State<StatefulWidget> createState() => _ServerPageState();
 }
 
-// 需求5：整个下拉菜单类直接注释删除，不再使用
-/*
 class _DropDownAction extends StatelessWidget {
   _DropDownAction();
 
+  // should only have one action
   final actions = [
     PopupMenuButton<String>(
         tooltip: "",
@@ -177,7 +177,6 @@ class _DropDownAction extends StatelessWidget {
     return actions[0];
   }
 }
-*/
 
 class _ServerPageState extends State<ServerPage> {
   Timer? _updateTimer;
@@ -189,21 +188,12 @@ class _ServerPageState extends State<ServerPage> {
       await gFFI.serverModel.fetchID();
     });
     gFFI.serverModel.checkAndroidPermission();
-  
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      // 同步悬浮窗禁用配置给原生
-      String floatStr = await bind.mainGetOption(key: kOptionDisableFloatingWindow);
-      final bool floatDisabled = floatStr == "Y";
-      await bind.mainSetLocalOption(
-        key: "floating_window_disabled",
-        value: floatDisabled ? "Y" : "N",
-      );
-  
-      String verifyMode = await bind.mainGetOption(key: kOptionVerificationMethod);
-      gFFI.serverModel.updatePasswordModel();
-      String approveMode = await bind.mainGetOption(key: kOptionApproveMode);
-      gFFI.serverModel.setApproveMode(approveMode);
-    });
+  }
+
+  @override
+  void dispose() {
+    _updateTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -218,8 +208,7 @@ class _ServerPageState extends State<ServerPage> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
-                        // 需求4：移除顶部蓝色密码提示文字框
-                        // buildPresetPasswordWarningMobile(),
+                        buildPresetPasswordWarningMobile(),
                         gFFI.serverModel.isStart
                             ? ServerInfo()
                             : ServiceNotRunningNotification(),
@@ -263,8 +252,14 @@ class ServiceNotRunningNotification extends StatelessWidget {
                 .marginOnly(bottom: 8),
             ElevatedButton.icon(
                 icon: const Icon(Icons.play_arrow),
-                onPressed: () {
-                    serverModel.toggleService();
+                onPressed: () async {
+                  // 复用设置页电池优化逻辑
+                  bool ignoreBattery = await AndroidPermissionManager.check(kRequestIgnoreBatteryOptimizations);
+                  if (!ignoreBattery) {
+                    await AndroidPermissionManager.request(kRequestIgnoreBatteryOptimizations);
+                  }
+                  // 授权完成后启动服务
+                  serverModel.toggleService();
                 },
                 label: Text(translate("Start service")))
           ],
@@ -408,24 +403,18 @@ class _PermissionCheckerState extends State<PermissionChecker> {
                       label: Text(translate("Stop service")))
                   .marginOnly(bottom: 8)
               : SizedBox.shrink(),
-          // 需求1：保留屏幕捕获、输入控制
           PermissionRow(
               translate("Screen Capture"),
-			  serverModel.mediaOk,
-			  serverModel.toggleService),
+              serverModel.mediaOk,
+              // 直接开启权限，移除诈骗弹窗判断
+              serverModel.toggleService),
           PermissionRow(translate("Input Control"), serverModel.inputOk,
               serverModel.toggleInput),
-
-          // 需求2：隐藏 文件传输、剪贴板、音频录制 三个开关
-          Offstage(offstage: true,
-            child: PermissionRow(translate("Transfer file"), serverModel.fileOk,
+          PermissionRow(translate("Transfer file"), serverModel.fileOk,
               serverModel.toggleFile),
-          ),
           hasAudioPermission
-              ? Offstage(offstage: true,
-                  child: PermissionRow(translate("Audio Capture"), serverModel.audioOk,
-                      serverModel.toggleAudio)
-                )
+              ? PermissionRow(translate("Audio Capture"), serverModel.audioOk,
+                  serverModel.toggleAudio)
               : Row(children: [
                   Icon(Icons.info_outline).marginOnly(right: 15),
                   Expanded(
@@ -434,10 +423,8 @@ class _PermissionCheckerState extends State<PermissionChecker> {
                     style: const TextStyle(color: MyTheme.darkGray),
                   ))
                 ]),
-          Offstage(offstage: true,
-            child: PermissionRow(translate("Enable clipboard"), serverModel.clipboardOk,
+          PermissionRow(translate("Enable clipboard"), serverModel.clipboardOk,
               serverModel.toggleClipboard),
-          ),
         ]));
   }
 }

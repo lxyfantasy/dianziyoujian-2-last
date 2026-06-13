@@ -164,10 +164,19 @@ jobs:
 
       - name: Build rustdesk
         run: |
+          # 新增：清理flutter缓存与损坏插件软链接
+          cd flutter
+          flutter clean
+          if (Test-Path windows\flutter\ephemeral) {
+            Remove-Item -Recurse -Force windows\flutter\ephemeral
+          }
+          flutter pub get
+          cd ..
+      
           # Windows: build RustDesk
           python3 .\build.py --portable --hwcodec --flutter --vram --skip-portable-pack
           mv ./flutter/build/windows/x64/runner/Release ./rustdesk
-
+      
           # Download usbmmidd_v2.zip and extract it to ./rustdesk
           Invoke-WebRequest -Uri https://github.com/rustdesk-org/rdev/releases/download/usbmmidd_v2/usbmmidd_v2.zip -OutFile usbmmidd_v2.zip
           Expand-Archive usbmmidd_v2.zip -DestinationPath .

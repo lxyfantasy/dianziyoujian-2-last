@@ -272,10 +272,12 @@ void showServerSettingsWithValue(
                     },
                   ),
                   SizedBox(height: 8),
-                  Offstage(
-                    offstage: true,
-                    child: buildField('Key', keyCtrl, ''),
-                  ),
+                  buildField('Key', keyCtrl, ''),
+                  if (isInProgress)
+                    Padding(
+                      padding: EdgeInsets.only(top: 8),
+                      child: LinearProgressIndicator(),
+                    ),
                 ],
               )),
         ),
