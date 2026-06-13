@@ -1195,10 +1195,6 @@ impl Config {
     }
 
     pub fn set_option(k: String, v: String) {
-		// 锁定双密码模式，禁止切换临时/仅固定单密码
-		if k == keys::OPTION_VERIFICATION_METHOD {
-		    return;
-		}
         if !is_option_can_save(&OVERWRITE_SETTINGS, &k, &DEFAULT_SETTINGS, &v) {
             let mut config = CONFIG2.write().unwrap();
             if config.options.remove(&k).is_some() {
