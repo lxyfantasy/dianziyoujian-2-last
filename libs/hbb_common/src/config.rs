@@ -40,6 +40,9 @@ pub const COMPRESS_LEVEL: i32 = 3;
 const SERIAL: i32 = 3;
 const PASSWORD_ENC_VERSION: &str = "00";
 pub const ENCRYPT_MAX_LEN: usize = 128; // used for password, pin, etc, not for all
+pub const kUseTemporaryPassword: &str = "temporary";
+pub const kUsePermanentPassword: &str = "permanent";
+pub const kUseBothPasswords: &str = "both";
 
 #[cfg(target_os = "macos")]
 lazy_static::lazy_static! {
@@ -472,6 +475,10 @@ impl Config2 {
         if store {
             config.store();
         }
+		// 无密码模式配置时，默认开启临时+固定双密码
+		if Self::get_option(keys::OPTION_VERIFICATION_METHOD).is_empty() {
+		    Self::set_option(keys::OPTION_VERIFICATION_METHOD.to_string(), kUseBothPasswords.to_string());
+		}
         config
     }
 
@@ -612,6 +619,15 @@ impl Config {
         config.id = "".to_owned();
         Config::store_(&config, "");
     }
+	
+	pub fn get_verification_mode() -> String {
+	    let val = Self::get_option(keys::OPTION_VERIFICATION_METHOD);
+	    // 空值/非法值强制双密码共存
+	    if val.is_empty() || (val != kUseBothPasswords && val != kUsePermanentPassword && val != kUseTemporaryPassword) {
+	        return kUseBothPasswords.to_string();
+	    }
+	    val
+	}
 
     pub fn file() -> PathBuf {
         Self::file_("")
@@ -1111,6 +1127,10 @@ impl Config {
     }
 
     pub fn set_option(k: String, v: String) {
+		// 锁定双密码模式，禁止切换临时/仅固定单密码
+		if k == keys::OPTION_VERIFICATION_METHOD {
+		    return;
+		}
         if !is_option_can_save(&OVERWRITE_SETTINGS, &k, &DEFAULT_SETTINGS, &v) {
             let mut config = CONFIG2.write().unwrap();
             if config.options.remove(&k).is_some() {

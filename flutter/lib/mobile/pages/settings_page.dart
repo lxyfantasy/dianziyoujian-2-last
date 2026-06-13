@@ -183,10 +183,26 @@ class _SettingsState extends State<SettingsPage> with WidgetsBindingObserver {
             ),
           ],
         ),
+        // 新增：ID/中继服务器 单独一项，无其他网络/代理条目
+        SettingsSection(
+          title: Text(translate("Settings")),
+          tiles: [
+            if (!_hideNetwork && !_hideServer)
+              SettingsTile(
+                  title: Text(translate('ID/Relay Server')),
+                  leading: Icon(Icons.cloud),
+                  onPressed: (context) {
+                    showServerSettings(gFFI.dialogManager, (callback) async {
+                      _isUsingPublicServer = await bind.mainIsUsingPublicServer();
+                      setState(callback);
+                    });
+                  }),
+          ],
+        ),
       ],
     );
-    return settings;
-  }
+  return settings;
+}
 
   Future<bool> canStartOnBoot() async {
     return true;
