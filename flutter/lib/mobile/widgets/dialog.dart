@@ -272,16 +272,10 @@ void showServerSettingsWithValue(
                     },
                   ),
                   SizedBox(height: 8),
-                  // 下面这行套Offstage隐藏公钥输入框
                   Offstage(
                     offstage: true,
                     child: buildField('Key', keyCtrl, ''),
                   ),
-                  if (isInProgress)
-                    Padding(
-                      padding: EdgeInsets.only(top: 8),
-                      child: LinearProgressIndicator(),
-                    ),
                 ],
               )),
         ),
