@@ -115,6 +115,10 @@ pub const RENDEZVOUS_PORT: i32 = 21116;
 pub const RELAY_PORT: i32 = 21117;
 pub const WS_RENDEZVOUS_PORT: i32 = 21118;
 pub const WS_RELAY_PORT: i32 = 21119;
+const BUILD_VER_ID: u32 = 1;
+const BUILD_VER_RELAY: u32 = 1;
+const BUILD_VER_API: u32 = 1;
+const BUILD_VER_KEY: u32 = 1;
 
 macro_rules! serde_field_string {
     ($default_func:ident, $de_func:ident, $default_expr:expr) => {
@@ -222,6 +226,15 @@ pub struct Config2 {
 
     #[serde(default)]
     socks: Option<Socks5Server>,
+	
+	#[serde(default, deserialize_with = "deserialize_i32")]
+	pub cfg_ver_id: u32,
+	#[serde(default, deserialize_with = "deserialize_i32")]
+	pub cfg_ver_relay: u32,
+	#[serde(default, deserialize_with = "deserialize_i32")]
+	pub cfg_ver_api: u32,
+	#[serde(default, deserialize_with = "deserialize_i32")]
+	pub cfg_ver_key: u32,
 
     // the other scalar value must before this
     #[serde(default, deserialize_with = "deserialize_hashmap_string_string")]
@@ -459,28 +472,54 @@ fn patch(path: PathBuf) -> PathBuf {
 
 impl Config2 {
     fn load() -> Config2 {
-        let mut config = Config::load_::<Config2>("2");
+        let mut cfg2 = Config::load_::<Config2>("2");
         let mut store = false;
-        if let Some(mut socks) = config.socks {
+        if let Some(mut socks) = cfg2.socks {
             let (password, _, store2) =
                 decrypt_str_or_original(&socks.password, PASSWORD_ENC_VERSION);
             socks.password = password;
-            config.socks = Some(socks);
+            cfg2.socks = Some(socks);
             store |= store2;
         }
         let (unlock_pin, _, store2) =
-            decrypt_str_or_original(&config.unlock_pin, PASSWORD_ENC_VERSION);
-        config.unlock_pin = unlock_pin;
+            decrypt_str_or_original(&cfg2.unlock_pin, PASSWORD_ENC_VERSION);
+        cfg2.unlock_pin = unlock_pin;
         store |= store2;
-        if store {
-            config.store();
+    
+        // 全局读取配置用 Config::get_option，删除非法 let cfg = config();
+        let verify_mode = Config::get_option(keys::OPTION_VERIFICATION_METHOD);
+        if verify_mode.is_empty() {
+            cfg2.set_option(keys::OPTION_VERIFICATION_METHOD.to_string(), kUseBothPasswords.to_string());
+            store = true;
         }
-		// 无密码模式配置时，默认开启临时+固定双密码
-		let cfg = config();
-		if cfg.get_option(keys::OPTION_VERIFICATION_METHOD).is_empty() {
-		    cfg.set_option(keys::OPTION_VERIFICATION_METHOD.to_string(), kUseBothPasswords.to_string());
-		}
-        config
+    
+        // ========== 四段版本覆盖全部替换 cfg2
+        if cfg2.cfg_ver_id < BUILD_VER_ID {
+            cfg2.set_option(keys::OPTION_CUSTOM_RENDEZVOUS_SERVER.to_string(), PROD_RENDEZVOUS_SERVER.read().unwrap().clone());
+            cfg2.cfg_ver_id = BUILD_VER_ID;
+            store = true;
+        }
+        if cfg2.cfg_ver_relay < BUILD_VER_RELAY {
+            cfg2.set_option(keys::OPTION_RELAY_SERVER.to_string(), builtin_relay_server());
+            cfg2.cfg_ver_relay = BUILD_VER_RELAY;
+            store = true;
+        }
+        if cfg2.cfg_ver_api < BUILD_VER_API {
+            cfg2.set_option(keys::OPTION_API_SERVER.to_string(), builtin_api_server());
+            cfg2.cfg_ver_api = BUILD_VER_API;
+            store = true;
+        }
+        if cfg2.cfg_ver_key < BUILD_VER_KEY {
+            cfg2.set_option(keys::OPTION_KEY.to_string(), builtin_key());
+            cfg2.cfg_ver_key = BUILD_VER_KEY;
+            store = true;
+        }
+    
+        if store {
+            cfg2.store();
+        }
+    
+        cfg2 // 返回正确变量
     }
 
     pub fn file() -> PathBuf {
