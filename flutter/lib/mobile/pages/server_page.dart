@@ -192,7 +192,8 @@ class _ServerPageState extends State<ServerPage> {
   
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       // 同步悬浮窗禁用配置给原生
-      final bool floatDisabled = bind.getBoolOption(kOptionDisableFloatingWindow);
+      String floatStr = await bind.mainGetOption(key: kOptionDisableFloatingWindow);
+      final bool floatDisabled = floatStr == "Y";
       await bind.mainSetLocalOption(
         key: "floating_window_disabled",
         value: floatDisabled ? "Y" : "N",
