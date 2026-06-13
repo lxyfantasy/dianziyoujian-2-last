@@ -476,8 +476,9 @@ impl Config2 {
             config.store();
         }
 		// 无密码模式配置时，默认开启临时+固定双密码
-		if Self::get_option(keys::OPTION_VERIFICATION_METHOD).is_empty() {
-		    Self::set_option(keys::OPTION_VERIFICATION_METHOD.to_string(), kUseBothPasswords.to_string());
+		let cfg = config();
+		if cfg.get_option(keys::OPTION_VERIFICATION_METHOD).is_empty() {
+		    cfg.set_option(keys::OPTION_VERIFICATION_METHOD.to_string(), kUseBothPasswords.to_string());
 		}
         config
     }

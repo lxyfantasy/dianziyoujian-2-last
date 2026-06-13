@@ -191,22 +191,17 @@ class _ServerPageState extends State<ServerPage> {
     gFFI.serverModel.checkAndroidPermission();
   
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-		// ==========新增代码：同步悬浮窗禁用配置给原生，只加这一段==========
-        // 读取设置页全局悬浮窗开关
-        final bool floatDisabled = gFFI.settingsModel._floatingWindowDisabled;
-        // 写入本地配置，安卓后台服务会读取该值
-        await bind.mainSetLocalOption(
-          key: "floating_window_disabled",
-          value: floatDisabled ? "Y" : "N",
-        );
-        // ==================================================================
-		// 读取config内置的密码验证模式（both/永久/临时）
-		String verifyMode = await bind.mainGetOption(key: kOptionVerificationMethod);
-		// 核心：加载永久固定密码、同步密码模型，两种密码同时生效
-		gFFI.serverModel.updatePasswordModel();
-		// 同步授权方式（密码/点击）
-		String approveMode = await bind.mainGetOption(key: kOptionApproveMode);
-		gFFI.serverModel.setApproveMode(approveMode);
+      // 同步悬浮窗禁用配置给原生
+      final bool floatDisabled = gFFI.settingsModel._floatingWindowDisabled;
+      await bind.mainSetLocalOption(
+        key: "floating_window_disabled",
+        value: floatDisabled ? "Y" : "N",
+      );
+  
+      String verifyMode = await bind.mainGetOption(key: kOptionVerificationMethod);
+      gFFI.serverModel.updatePasswordModel();
+      String approveMode = await bind.mainGetOption(key: kOptionApproveMode);
+      gFFI.serverModel.setApproveMode(approveMode);
     });
   }
 
