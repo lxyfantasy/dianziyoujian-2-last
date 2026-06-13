@@ -52,6 +52,18 @@ lazy_static::lazy_static! {
 type Size = (i32, i32, i32, i32);
 type KeyPair = (Vec<u8>, Vec<u8>);
 
+fn builtin_relay_server() -> String {
+    format!("{}:{}", RENDEZVOUS_SERVERS[0], RELAY_PORT)
+}
+
+fn builtin_api_server() -> String {
+    "47.93.11.7:21120".to_string()
+}
+
+fn builtin_key() -> String {
+    RS_PUB_KEY.to_string()
+}
+
 lazy_static::lazy_static! {
     static ref CONFIG: RwLock<Config> = RwLock::new(Config::load());
     static ref CONFIG2: RwLock<Config2> = RwLock::new(Config2::load());
@@ -227,13 +239,13 @@ pub struct Config2 {
     #[serde(default)]
     socks: Option<Socks5Server>,
 	
-	#[serde(default, deserialize_with = "deserialize_i32")]
+	#[serde(default, deserialize_with = "deserialize_u32")]
 	pub cfg_ver_id: u32,
-	#[serde(default, deserialize_with = "deserialize_i32")]
+	#[serde(default, deserialize_with = "deserialize_u32")]
 	pub cfg_ver_relay: u32,
-	#[serde(default, deserialize_with = "deserialize_i32")]
+	#[serde(default, deserialize_with = "deserialize_u32")]
 	pub cfg_ver_api: u32,
-	#[serde(default, deserialize_with = "deserialize_i32")]
+	#[serde(default, deserialize_with = "deserialize_u32")]
 	pub cfg_ver_key: u32,
 
     // the other scalar value must before this
@@ -551,6 +563,22 @@ impl Config2 {
         lock.store();
         true
     }
+	
+	pub fn set_option(&mut self, k: String, v: String) {
+	    Self::purify_options(&mut self.options);
+	    let v2 = if v.is_empty() { None } else { Some(&v) };
+	    if v2 != self.options.get(&k) {
+	        if v2.is_none() {
+	            self.options.remove(&k);
+	        } else {
+	            self.options.insert(k, v);
+	        }
+	    }
+	}
+	
+	fn purify_options(v: &mut HashMap<String, String>) {
+	    v.retain(|k, v| is_option_can_save(&OVERWRITE_SETTINGS, k, &DEFAULT_SETTINGS, v));
+	}
 }
 
 pub fn load_path<T: serde::Serialize + serde::de::DeserializeOwned + Default + std::fmt::Debug>(
@@ -2510,6 +2538,7 @@ deserialize_default!(deserialize_size, Size);
 deserialize_default!(deserialize_hashmap_string_string, HashMap<String, String>);
 deserialize_default!(deserialize_hashmap_string_bool,  HashMap<String, bool>);
 deserialize_default!(deserialize_hashmap_resolutions, HashMap<String, Resolution>);
+deserialize_default!(deserialize_u32, u32);
 
 #[inline]
 fn get_or(
