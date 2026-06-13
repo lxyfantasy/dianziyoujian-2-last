@@ -192,7 +192,7 @@ class _ServerPageState extends State<ServerPage> {
   
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       // 同步悬浮窗禁用配置给原生
-      final bool floatDisabled = gFFI.settingsModel._floatingWindowDisabled;
+      final bool floatDisabled = FFI.getBoolOption(keys.OPTION_DISABLE_FLOATING_WINDOW);
       await bind.mainSetLocalOption(
         key: "floating_window_disabled",
         value: floatDisabled ? "Y" : "N",
